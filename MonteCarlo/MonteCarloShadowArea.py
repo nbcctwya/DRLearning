@@ -1,5 +1,5 @@
 import numpy as np
-from spyder_kernels.utils.lazymodules import numpy
+
 
 low = 0.0
 high = 2.0
