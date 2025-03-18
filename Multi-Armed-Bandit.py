@@ -64,23 +64,31 @@ class EpsilonGreedy(Solver):
         self.estimates[k] += 1. / (self.counts[k] + 1) * (r - self.estimates[k])
         return k
 
-# 每次随机都一样
+
+def plot_results(solvers, solver_names):
+    """生成累积懊悔随时间变化的图像。输入solvers是一个列表,列表中的每个元素是一种特定的策略。
+    而solver_names也是一个列表,存储每个策略的名称"""
+    for idx, solver in enumerate(solvers):
+        time_list = range(len(solver.regrets))
+        plt.plot(time_list, solver.regrets, label=solver_names[idx])
+    plt.xlabel('Time steps')
+    plt.ylabel('Cumulative regrets')
+    plt.title('%d-armed bandit' % solvers[0].bandit.K)
+    plt.legend()
+    plt.show()
+
+
 np.random.seed(1)  # 设定随机种子,使实验具有可重复性
 K = 10
 bandit_10_arm = BernoulliBandit(K)
 print("随机生成了一个%d臂伯努利老虎机" % K)
 print("获奖概率最大的拉杆为%d号,其获奖概率为%.4f" %
       (bandit_10_arm.best_idx, bandit_10_arm.best_prob))
-
-select_times = np.zeros(10)
-win_times = np.zeros(10)
-for i in range(1000):
-    ii = i % 10
-    select_times[ii] += 1
-    win_times[ii] += bandit_10_arm.step(ii)
-
-print(select_times)
-print(win_times)
-win_rate = win_times / select_times
-print(win_rate)
-# [0.51 0.61 0.   0.36 0.16 0.11 0.15 0.33 0.32 0.52]
+np.random.seed(1)
+epsilon_greedy_solver = EpsilonGreedy(bandit_10_arm, epsilon=0.01)
+epsilon_greedy_solver.run(5000)
+print('epsilon-贪婪算法的累积懊悔为：', epsilon_greedy_solver.regret)
+plot_results([epsilon_greedy_solver], ["EpsilonGreedy"])
+print(epsilon_greedy_solver.estimates)
+#  [0.43907563 0.7190221  0.         0.29113924 0.15711253 0.11949686
+#   0.19214876 0.32857143 0.4164859  0.50693069]
