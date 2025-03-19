@@ -85,10 +85,15 @@ print("随机生成了一个%d臂伯努利老虎机" % K)
 print("获奖概率最大的拉杆为%d号,其获奖概率为%.4f" %
       (bandit_10_arm.best_idx, bandit_10_arm.best_prob))
 np.random.seed(1)
-epsilon_greedy_solver = EpsilonGreedy(bandit_10_arm, epsilon=0.01)
-epsilon_greedy_solver.run(5000)
-print('epsilon-贪婪算法的累积懊悔为：', epsilon_greedy_solver.regret)
-plot_results([epsilon_greedy_solver], ["EpsilonGreedy"])
-print(epsilon_greedy_solver.estimates)
-#  [0.43907563 0.7190221  0.         0.29113924 0.15711253 0.11949686
-#   0.19214876 0.32857143 0.4164859  0.50693069]
+
+
+np.random.seed(0)
+epsilons = [1e-4, 0.01, 0.1, 0.25, 0.5]
+epsilon_greedy_solver_list = [
+    EpsilonGreedy(bandit_10_arm, epsilon=e) for e in epsilons
+]
+epsilon_greedy_solver_names = ["epsilon={}".format(e) for e in epsilons]
+for solver in epsilon_greedy_solver_list:
+    solver.run(5000)
+
+plot_results(epsilon_greedy_solver_list, epsilon_greedy_solver_names)
