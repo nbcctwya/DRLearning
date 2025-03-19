@@ -85,6 +85,41 @@ class DecayingEpsilonGreedy(Solver):
         return k
 
 
+class UCB(Solver):
+    """ UCB算法,继承Solver类 """
+    def __init__(self, bandit, coef, init_prob=1.0):
+        super(UCB,self).__init__(bandit)
+        self.total_count = 0
+        self.estimates = np.array([init_prob] * self.bandit.K)
+        self.coef = coef
+
+    def run_one_step(self):
+        self.total_count += 1
+        ucb = self.estimates + self.coef * np.sqrt(
+            np.log(self.total_count) / (2 * (self.counts + 1)))  # 计算上置信界
+        k = np.argmax(ucb)  # 选出上置信界最大的拉杆
+        r = self.bandit.step(k)
+        self.estimates[k] += 1. / (self.counts[k] + 1) * (r - self.estimates[k])
+        return k
+
+
+class ThompsonSampling(Solver):
+    """ 汤普森采样算法,继承Solver类 """
+    def __init__(self, bandit):
+        super(ThompsonSampling, self).__init__(bandit)
+        self._a = np.ones(self.bandit.K)  # 列表,表示每根拉杆奖励为1的次数
+        self._b = np.ones(self.bandit.K)  # 列表,表示每根拉杆奖励为0的次数
+
+    def run_one_step(self):
+        samples = np.random.beta(self._a, self._b)  # 按照Beta分布采样一组奖励样本
+        k = np.argmax(samples)  # 选出采样奖励最大的拉杆
+        r = self.bandit.step(k)
+
+        self._a[k] += r  # 更新Beta分布的第一个参数
+        self._b[k] += (1 - r)  # 更新Beta分布的第二个参数
+        return k
+
+
 def plot_results(solvers, solver_names):
     """生成累积懊悔随时间变化的图像。输入solvers是一个列表,列表中的每个元素是一种特定的策略。
     而solver_names也是一个列表,存储每个策略的名称"""
@@ -108,27 +143,8 @@ np.random.seed(1)
 
 
 
-class UCB(Solver):
-    """ UCB算法,继承Solver类 """
-    def __init__(self, bandit, coef, init_prob=1.0):
-        super(UCB,self).__init__(bandit)
-        self.total_count = 0
-        self.estimates = np.array([init_prob] * self.bandit.K)
-        self.coef = coef
-
-    def run_one_step(self):
-        self.total_count += 1
-        ucb = self.estimates + self.coef * np.sqrt(
-            np.log(self.total_count) / (2 * (self.counts + 1)))  # 计算上置信界
-        k = np.argmax(ucb)  # 选出上置信界最大的拉杆
-        r = self.bandit.step(k)
-        self.estimates[k] += 1. / (self.counts[k] + 1) * (r - self.estimates[k])
-        return k
-
-
 np.random.seed(1)
-coef = 1  # 控制不确定性比重的系数
-UCB_solver = UCB(bandit_10_arm, coef)
-UCB_solver.run(5000)
-print('上置信界算法的累积懊悔为：', UCB_solver.regret)
-plot_results([UCB_solver], ["UCB"])
+thompson_sampling_solver = ThompsonSampling(bandit_10_arm)
+thompson_sampling_solver.run(5000)
+print('汤普森采样算法的累积懊悔为：', thompson_sampling_solver.regret)
+plot_results([thompson_sampling_solver], ["ThompsonSampling"])
