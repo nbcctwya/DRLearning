@@ -141,11 +141,28 @@ def MC(episodes, V, N, gamma):
             V[s] = V[s] + (G - V[s]) / N[s]
 
 
-timestep_max = 20
-# 采样1000次,可以自行修改
-episodes = sample(MDP, Pi_1, timestep_max, 1000)
+def occupancy(episodes, s, a, timestep_max, gamma):
+    ''' 计算状态动作对（s,a）出现的频率,以此来估算策略的占用度量 '''
+    rho = 0
+    total_times = np.zeros(timestep_max)  # 记录每个时间步t各被经历过几次
+    occur_times = np.zeros(timestep_max)  # 记录(s_t,a_t)=(s,a)的次数
+    for episode in episodes:
+        for i in range(len(episode)):
+            (s_opt, a_opt, r, s_next) = episode[i]
+            total_times[i] += 1
+            if s == s_opt and a == a_opt:
+                occur_times[i] += 1
+    for i in reversed(range(timestep_max)):
+        if total_times[i]:
+            rho += gamma**i * occur_times[i] / total_times[i]
+    return (1 - gamma) * rho
+
+
 gamma = 0.5
-V = {"s1": 0, "s2": 0, "s3": 0, "s4": 0, "s5": 0}
-N = {"s1": 0, "s2": 0, "s3": 0, "s4": 0, "s5": 0}
-MC(episodes, V, N, gamma)
-print("使用蒙特卡洛方法计算MDP的状态价值为\n", V)
+timestep_max = 1000
+
+episodes_1 = sample(MDP, Pi_1, timestep_max, 1000)
+episodes_2 = sample(MDP, Pi_2, timestep_max, 1000)
+rho_1 = occupancy(episodes_1, "s4", "概率前往", timestep_max, gamma)
+rho_2 = occupancy(episodes_2, "s4", "概率前往", timestep_max, gamma)
+print(rho_1, rho_2)
